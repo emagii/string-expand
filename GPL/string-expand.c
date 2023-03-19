@@ -29,7 +29,9 @@
 #include <sys/types.h>
 #include <libiberty/dyn-string.h>
 #include "string-expand.h"
+
 #define	DEBUG 0
+#define MAX_STRING 100
 
 #if (DEBUG)
 #define BEGIN  printf("%s BEGIN\n", __FUNCTION__)
@@ -42,43 +44,6 @@
 #define TAG(x)
 #define dbg_printf(...)
 #endif
-
-/* String functions */
-#define MAX_STRING 100
-
-#if 0
-typedef struct {
-  uint32_t	ix;
-  char		data[MAX_STRING+1];
-} dyn_string_t;
-
-static void
-append(dyn_string_t *s, char c)
-{
-  uint32_t ix = s->ix;
-  if (ix < MAX_STRING)
-    {
-      char *p = &s->data[ix];
-      *p++ = c;
-      *p   = '\0';
-      s->ix++;
-    }
-}
-
-static void
-clear(dyn_string_t *s)
-{
-  s->ix = 0;
-  s->data[0] = '\0';
-}
-
-static bool
-max_string_size(dyn_string_t *s)
-{
-  return (s->ix >= MAX_STRING);
-}
-#endif
-
 
 #ifdef VMS
 static char slash = '\0';
@@ -162,32 +127,6 @@ parse_environment_variable(char *s, char **next)
   *next = s;
   return NULL;
 }
-
-#if 0
-static
-bool expand(char **result, dyn_string_t buf, char *env)
-{
-  char *tmp;
-  int32_t status;
-  char *_result = *result;
-  if (_result == NULL)
-    _result = "";
-  char *_env    = env;
-  if (_env == NULL)
-    _env = "";
-  status = asprintf(&tmp, "%s%s%s", _result, buf->data, _env);
-
-  if (status != -1)
-    {
-      clear(buf);
-      if (*result != NULL)
-        free(*result);
-      *result = tmp;
-      return true;
-    }
-  return false;
-}
-#endif
 
 char *expand_string(char *str)
 {
