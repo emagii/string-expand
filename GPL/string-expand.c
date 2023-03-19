@@ -27,7 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-
+#include <libiberty/dyn-string.h>
 #include "string-expand.h"
 #define	DEBUG 0
 
@@ -45,13 +45,15 @@
 
 /* String functions */
 #define MAX_STRING 100
+
+#if 0
 typedef struct {
   uint32_t	ix;
   char		data[MAX_STRING+1];
-} string_t;
+} dyn_string_t;
 
 static void
-append(string_t *s, char c)
+append(dyn_string_t *s, char c)
 {
   uint32_t ix = s->ix;
   if (ix < MAX_STRING)
@@ -64,17 +66,19 @@ append(string_t *s, char c)
 }
 
 static void
-clear(string_t *s)
+clear(dyn_string_t *s)
 {
   s->ix = 0;
   s->data[0] = '\0';
 }
 
 static bool
-max_string_size(string_t *s)
+max_string_size(dyn_string_t *s)
 {
   return (s->ix >= MAX_STRING);
 }
+#endif
+
 
 #ifdef VMS
 static char slash = '\0';
@@ -159,8 +163,9 @@ parse_environment_variable(char *s, char **next)
   return NULL;
 }
 
+#if 0
 static
-bool expand(char **result, string_t *buf, char *env)
+bool expand(char **result, dyn_string_t buf, char *env)
 {
   char *tmp;
   int32_t status;
@@ -182,15 +187,16 @@ bool expand(char **result, string_t *buf, char *env)
     }
   return false;
 }
+#endif
 
 char *expand_string(char *str)
 {
-  string_t  buf;
+  dyn_string_t  buf = dyn_string_new(MAX_STRING + 1);
   int len = strlen(str);
   char *p, *endp;
   char *result;
 
-  if (len == 0)
+  if ((len == 0) || (buf == NULL))
     {
       result = malloc(1);	/* Normally we free the result afterwards */
       *result = '\0';		/* So we always have to provide dyn mem */
@@ -198,8 +204,6 @@ char *expand_string(char *str)
     }
 
   char *s = strdup(str);
-  result  = NULL;	/* Result string */
-  clear(&buf);
   p = s; endp = &s[len];
   for (p = s ; p < endp ; p++)
     {
@@ -210,31 +214,18 @@ char *expand_string(char *str)
 	  char *env = parse_environment_variable(p, &p);
           if (env != NULL)
             {
-	      if (expand(&result, &buf, env))
-		{
-		  clear(&buf);
-		  push=false;
-		}
+              dyn_string_append_cstr(buf, env);
+	      push=false;
             }
 	}
       if (push)
 	{
 	  TAG(c);
-	  append(&buf, c);
-          if (max_string_size(&buf))
-            {
-	      if (expand(&result, &buf, NULL))
-	        {
-	          clear(&buf);
-		}
-            }
+	  dyn_string_append_char(buf, c);
         }
      }
    free(s);
-   if (expand(&result, &buf, NULL))
-     {
-     	clear(&buf);
-     }
+   result = dyn_string_release(buf);
    return replace_slash(result);
 }
 
