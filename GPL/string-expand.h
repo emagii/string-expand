@@ -18,10 +18,10 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
- 
+
 #ifndef STRING_EXPAND
 #define STRING_EXPAND
 
-extern char *expand_string(char *str);
+extern char *expand_string (char *str);
 
 #endif /* STRING_EXPAND */

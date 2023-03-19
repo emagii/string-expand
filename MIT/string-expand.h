@@ -25,10 +25,10 @@
  * SOFTWARE.
  *
  */
- 
+
 #ifndef STRING_EXPAND
 #define STRING_EXPAND
 
-extern char *expand_string(char *str);
+extern char *expand_string (char *str);
 
 #endif /* STRING_EXPAND */

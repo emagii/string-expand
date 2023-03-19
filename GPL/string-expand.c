@@ -59,16 +59,17 @@ const char bad_slash = '\\';
 #endif
 
 static char *
-replace_slash(char *s)
+replace_slash (char *s)
 {
-  uint32_t len = strlen(s);
-  for (int i = 0; i < len ; i++)
+  uint32_t len = strlen (s);
+  for (int i = 0; i < len; i++)
     {
       if (s[i] == bad_slash)
-        {
-          s[i] = slash;
-        }
-      if (i > 100) printf("bad i\n");
+	{
+	  s[i] = slash;
+	}
+      if (i > 100)
+	printf ("bad i\n");
     }
   return s;
 }
@@ -77,17 +78,18 @@ replace_slash(char *s)
 #ifdef VMS
 #define basename(s) (s)
 #else
-char *basename(char *s)
+char *
+basename (char *s)
 {
-  size_t len = strlen(s);
+  size_t len = strlen (s);
   char marker = *slash;
 
-  for (uint32_t i = len-1 ; len > 0 ; len--)
+  for (uint32_t i = len - 1; len > 0; len--)
     {
       if (s[i] == marker)
-        {
-          return &s[len++];
-        }
+	{
+	  return &s[len++];
+	}
     }
 }
 #endif
@@ -99,110 +101,113 @@ char *basename(char *s)
   Returns NULL, if not in "${XXX}" format, or XXX is unknown
  */
 static char *
-parse_environment_variable(char *s, char **next)
+parse_environment_variable (char *s, char **next)
 {
-  size_t len = strlen(s);
+  size_t len = strlen (s);
   if (s[0] == '$')
     {
       if (s[1] == '{')
 	{
-	  char   *env;
-          for (int i = 2; i < len ; i++)
-            {
-              char c = s[i];
-	      TAG(c);
+	  char *env;
+	  for (int i = 2; i < len; i++)
+	    {
+	      char c = s[i];
+	      TAG (c);
 	      /* c is never '\0' since we iterate over strlen */
-              if (c == '}')
+	      if (c == '}')
 		{
 		  s[i] = '\0';
-		  env = getenv(&s[2]);
+		  env = getenv (&s[2]);
 		  s[i] = '}';
 		  *next = &s[i];
 		  return env;
 		}
-            }
-          /* Invalid environment variable - do not translate */          
-        }
+	    }
+	  /* Invalid environment variable - do not translate */
+	}
     }
   *next = s;
   return NULL;
 }
 
-char *expand_string(char *str)
+char *
+expand_string (char *str)
 {
-  dyn_string_t  buf = dyn_string_new(MAX_STRING + 1);
-  int len = strlen(str);
+  dyn_string_t buf = dyn_string_new (MAX_STRING + 1);
+  int len = strlen (str);
   char *p, *endp;
   char *result;
 
   if ((len == 0) || (buf == NULL))
     {
-      result = malloc(1);	/* Normally we free the result afterwards */
+      result = malloc (1);	/* Normally we free the result afterwards */
       *result = '\0';		/* So we always have to provide dyn mem */
       return result;
     }
 
-  char *s = strdup(str);
-  p = s; endp = &s[len];
-  for (p = s ; p < endp ; p++)
+  char *s = strdup (str);
+  p = s;
+  endp = &s[len];
+  for (p = s; p < endp; p++)
     {
       char c = *p;
-      bool push=true;
+      bool push = true;
       if ((c == '$') && (p[1] == '{'))
 	{
-	  char *env = parse_environment_variable(p, &p);
-          if (env != NULL)
-            {
-              dyn_string_append_cstr(buf, env);
-	      push=false;
-            }
+	  char *env = parse_environment_variable (p, &p);
+	  if (env != NULL)
+	    {
+	      dyn_string_append_cstr (buf, env);
+	      push = false;
+	    }
 	}
       if (push)
 	{
-	  TAG(c);
-	  dyn_string_append_char(buf, c);
-        }
-     }
-   free(s);
-   result = dyn_string_release(buf);
-   return replace_slash(result);
+	  TAG (c);
+	  dyn_string_append_char (buf, c);
+	}
+    }
+  free (s);
+  result = dyn_string_release (buf);
+  return replace_slash (result);
 }
 
 #if defined(__MAIN__)
-static
-void validate (char *s, char *expected)
+static void
+validate (char *s, char *expected)
 {
-  char *translated = expand_string(s);
+  char *translated = expand_string (s);
   char *quoted;
-  int len = asprintf(&quoted, "\"%s\"", translated);
-  if (!strcmp(translated, expected))
+  int len = asprintf (&quoted, "\"%s\"", translated);
+  if (!strcmp (translated, expected))
     {
-      printf("FOUND:    %-40sOK\n", quoted);
-      free(quoted);
+      printf ("FOUND:    %-40sOK\n", quoted);
+      free (quoted);
     }
   else
     {
-      printf("FAIL:     %-40sFAIL\n", quoted);
-      free(quoted);
-      len = asprintf(&quoted, "\"%s\"", expected);
-      printf("EXPECTED: %-40s\n", quoted);
-      free(quoted);
+      printf ("FAIL:     %-40sFAIL\n", quoted);
+      free (quoted);
+      len = asprintf (&quoted, "\"%s\"", expected);
+      printf ("EXPECTED: %-40s\n", quoted);
+      free (quoted);
     }
-  free(translated);
+  free (translated);
 }
 
-void main(void)
+void
+main (void)
 {
-   setenv("RESULT", "Success", 1);
+  setenv ("RESULT", "Success", 1);
 
-   validate("$RESULT",				"Should fail!");
-   validate("The result is ${RESULT}",		"The result is Success");
-   validate("The result is ${RESULT",		"The result is ${RESULT");
-   validate("${RESULT}", 			"Success");
-   validate("$RESULT",				"$RESULT");
-   validate("${RESULT} starts this sentence",	"Success starts this sentence");
-   validate("", 				"");
-   validate("$RESULT",				"$RESULT");
-   validate("$RESULT\\allan",			"$RESULT/allan");
+  validate ("$RESULT", "Should fail!");
+  validate ("The result is ${RESULT}", "The result is Success");
+  validate ("The result is ${RESULT", "The result is ${RESULT");
+  validate ("${RESULT}", "Success");
+  validate ("$RESULT", "$RESULT");
+  validate ("${RESULT} starts this sentence", "Success starts this sentence");
+  validate ("", "");
+  validate ("$RESULT", "$RESULT");
+  validate ("$RESULT\\allan", "$RESULT/allan");
 }
 #endif
